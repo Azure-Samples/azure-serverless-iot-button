@@ -190,7 +190,7 @@ If you see in the code we reference the `LogicAppEndpoint`, now we just need to 
     -   **joinme**: "You should join me at the Microsoft booth at
         #Serverlessconf NYC"
 
-    -   **azureserverless**: "Azure Serverless is awesome!"
+    -   **azurefunctions**: "Azure Serverless is awesome!"
 
 The url should look similar to this:
 
