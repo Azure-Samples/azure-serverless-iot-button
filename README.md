@@ -73,102 +73,213 @@ template for an HTTP triggered function will execute when sent an HTTP request.
 
 This will give the function URL a path parameter `messageType` we can access within the function.
 
-Next choose either [C#](#C#-sample) or [JavaScript](#javascript-sample) for a sample function.
+Implement Function – C#
+========================
 
-## C# Sample
+The C# implementation will use a NuGet package named linqtotwitter to interact
+with the Twitter api.
 
-If writing a C# Function, here is the code you can use to send a request to a Logic App to post a Tweet:
+1.  Select the new function, then click View files on the right hand side.
 
-```csharp
-using System.Net;
-using System.Net.Http;
+2.  Click the add button and create a file named `project.json`.
 
-public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, string messageType, TraceWriter log)
+3.  Select project.json and add the following code to include linqtotwitter in
+    the function:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 {
-    log.Info("C# HTTP trigger function processed a request.");
-    var _messageMap = new Dictionary<string, string>
-    {
-        ["arrived"] = "Arrived at #ServerlessConf NYC. Trying out this cool #AzureFunctions demo",
-        ["joinme"] = "You should join me at the Microsoft booth at #Serverlessconf NYC",
-        ["azureserverless"] = "Azure Serverless is awesome! @AzureFunctions @logicappsio"
-    };
-     _messageMap.TryGetValue(messageType, out string message);
-    var client = new HttpClient();
-    await client.PostAsJsonAsync(Environment.GetEnvironmentVariable("LogicAppEndpoint", 
-              EnvironmentVariableTarget.Process), message);
-    return req.CreateResponse(HttpStatusCode.OK);
+  "frameworks": {
+    "net46":{
+      "dependencies": {
+        "linqtotwitter": "4.1.0"
+      }
+    }
+   }
 }
-```
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-## JavaScript Sample
+Save the file.
 
-If writing a JavaScript function, here is the code you can use to send a request to a Logic App to post a tweet:
+1.  Navigate to run.csx and remove the existing code from lines 5 to 20, leaving
+    only the initial `Run` method and the `using` statement.
 
-```javascript
-const https = require('https');
-const url = require('url');
-const myURL = url.parse(process.env["LogicAppEndpoint"]);
+2.  Add the following code above `Run`:
 
-module.exports = function (context, req) {
-    context.log('JavaScript HTTP trigger function processed a request.');
+>   using System.Net;  
+>   using System.Net.Http;  
+>   using LinqToTwitter;  
+>     
+>   private static TwitterContext _twitterCtx = null;  
+>   private static IDictionary<string, string> _messageMap;
 
-    let messageType = context.bindingData.messageType;
-    let messageMap = {
-        arrived: "Arrived at #ServerlessConf NYC. Trying out this cool #AzureFunctions demo",
-        joinme: "You should join me at the Microsoft booth at #Serverlessconf NYC",
-        azurefunctions: "Azure Serverless is awesome! @AzureFunctions @logicappsio"
-    };
+1.  Add the following code inside the `Run` method:
 
-    let statusMessage = messageMap[messageType];
-    if(statusMessage) {
-        const options = {
-            hostname: myURL.hostname,
-            port: 443,
-            path: myURL.path,
-            method: 'POST'
-        };
-        const req = https.request(options, (res) => { context.log(`STATUS: ${res.statusCode}`)});
-        req.write(statusMessage);
-        req.end();
-        context.res = {
-            status: 200,
-            body: "Tweet sent"
-        };
-    } else {
-        context.res = {
-            status: 400,
-            body: "Invalid request. Messing message type"
-        };
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if (_twitterCtx == null)
+    {
+        await SetupTwitterClient();
     }
 
-    context.done();
-};
-```
+    if (_messageMap.TryGetValue(messageType, out string message))
+    {
+        try
+        {
+            return req.CreateResponse(HttpStatusCode.OK);
+        }
+        catch (TwitterQueryException ex) {
+            return req.CreateResponse(HttpStatusCode.InternalServerError);
+        }
+    }
 
-## Creating a tweeting Logic App
+    return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid message");
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Click the **+ New** button in the Azure Portal
-1. Click Web + Mobile > Logic App, and configure one in your subscription
-1. After it is deployed, use the search in the top of the portal to open the logic app
-1. Select to **Edit** (should open by default) and choose **Start from Blank**
-1. Our function will invoke this workflow via HTTP, so add a "Request" trigger for **When an HTTP Request is received**.
-1. After the trigger, click **New Step** and add an action with **Twitter** to **Post a Tweet**.  Login with your twitter account.
-1. For the Tweet Text, select the request body from the trigger.
-1. Click save, and copy the URL from the request trigger.
+1.  Add the following method below the `Run` method to authenticate an
+    associated Twitter account:
 
-![Logic App](images/logicapp.png)
+>   private static async Task SetupTwitterClient()  
+>   {  
+>   SingleUserAuthorizer authorizer = new SingleUserAuthorizer  
+>   {  
+>   CredentialStore = new SingleUserInMemoryCredentialStore  
+>   {  
+>   ConsumerKey = Environment.GetEnvironmentVariable("TwitterAppKey",
+>   EnvironmentVariableTarget.Process),  
+>   ConsumerSecret = Environment.GetEnvironmentVariable("TwitterAppSecret",
+>   EnvironmentVariableTarget.Process),  
+>   AccessToken = Environment.GetEnvironmentVariable("TwitterAccessToken",
+>   EnvironmentVariableTarget.Process),  
+>   AccessTokenSecret =
+>   Environment.GetEnvironmentVariable("TwitterAccessTokenSecret",
+>   EnvironmentVariableTarget.Process)  
+>   }  
+>   };  
+>   await authorizer.AuthorizeAsync();  
+>     
+>   _messageMap = new Dictionary<string, string>  
+>   {  
+>   ["arrived"] = "Arrived at #ServerlessConf NYC. Trying out this
+>   #AzureFunctions demo cool",  
+>   ["joinme"] = "You should join me at the Microsoft booth at #Serverlessconf
+>   NYC",  
+>   ["azurefunctions"] = "Azure Serverless is awesome!"  
+>   };  
+>     
+>   _twitterCtx = new TwitterContext(authorizer);  
+>   }
 
-## Configure the Function Environment Variables
+1.  Save the file.
 
-If you see in the code we reference the `LogicAppEndpoint`, now we just need to set that environmental variable.
+Implement and Configure Function - JavaScript
+=============================================
 
-1.	In the portal, navigate to the function app that hosts the recently created function.
-2.	In the function app overview tab, click on Application settings.
-3.	Scroll down to the Application settings section, click on the "+ Add new setting" button and add the key:
-    - LogicAppEndpoint: *The Request URL from the Logic App* - something like `https://prod-23.westus.logic.azure.com:443/workflows/***`
-1. Click **Save**
+The JavaScript implementation will use a npm package named twitter to interact
+with the Twitter api. This requires accessing the function console through the
+portal to install the package and package.json file.
 
-## Configure Flic
+![C:UsersjagreenaAppDataLocalMicrosoftWindowsINetCacheContent.Wordfunction_settings_portal.png](media/34f4ba91826f68aec291acb92bcc0c73.png)
+
+1.  In the portal, select the created function app and select the Platform
+    features tab.
+
+2.  Under development tools, click on Console.
+
+3.  In the console, navigate to the function directory: `cd
+    myHttpTriggerFunction`
+
+4.  Create a package.json file with default values and add the twitter package
+    with the following commands:
+
+>   npm init -y  
+>   npm install twitter
+
+1.  Exit the console and select the new function, then click View files on the
+    right hand side.
+
+2.  Replace index.js with the following code:
+
+>   let Twitter = require("twitter");  
+>     
+>   module.exports = function(context, req) {  
+>   context.log("Azure Functions Twitter Demo");  
+>     
+>   var client = new Twitter({  
+>   consumer_key: process.env["TwitterAppKey"],  
+>   consumer_secret: process.env["TwitterAppSecret"],  
+>   access_token_key: process.env["TwitterAccessToken"],  
+>   access_token_secret: process.env["TwitterAccessTokenSecret"]  
+>   });  
+>     
+>   let messageMap = {  
+>   arrived: "Arrived at #ServerlessConf NYC. Trying out #AzureFunctions",  
+>   joinme: "You should join me at the Microsoft booth at #Serverlessconf NYC",  
+>   azurefunctions: "Azure Functions is awesome!"  
+>   };  
+>     
+>   let messageType = context.bindingData.messageType;  
+>   let statusMessage = messageMap[messageType];  
+>     
+>   if (statusMessage) {  
+>   client.post("statuses/update", { status: statusMessage },  
+>   function(error,tweet,  response) {  
+>   if (error) throw error;  
+>   context.log(tweet); // Tweet body.  
+>   context.log(response); // Raw response object.  
+>   context.res = {  
+>   status: 200,  
+>   body: "Tweet sent"  
+>   };  
+>   context.done();  
+>   });  
+>   } else {  
+>   context.res = {  
+>   status: 400,  
+>   body: "Invalid request. Messing message type"  
+>   };  
+>   context.done();  
+>   }  
+>   };
+
+1.  Save the file.
+
+Create Twitter App
+==================
+
+1.  Sign in to Twitter, then navigate to https://apps.twitter.com/ and create a
+    new Twitter app by clicking the button on the top right of the page and
+    filling out the form. The website is a required field, but not needed for
+    the app so you may add a placeholder site. Click on the button at the end of
+    the form to create the app.
+
+2.  In the app's details, navigate to the Keys and Access Tokens tab and click
+    on the button in the Token Actions section to create an access token.
+
+3.  You will need the Consumer Key, Consumer Secret, Access Token, and Access
+    Token Secret for the next step, keep this page open to copy these values
+    into to your function configuration.
+
+Configure Function Keys
+=======================
+
+1.  In the portal, navigate to the function app that hosts the recently created
+    function.
+
+2.  In the function app overview tab, click on Application settings.
+
+3.  Scroll down to the Application settings section, click on the "+ Add new
+    setting" button and add the keys from the Twitter app page as name and value
+    pairs:
+
+    -   **TwitterAppKey**: Consumer Key
+
+    -   **TwitterAppKeySecret**: Consumer Secret
+
+    -   **TwitterAccessToken**: Access Token
+
+    -   **TwitterAccessTokenSecret**: Access Token Secret
+
+Configure Flic
+==============
 
 1.  Copy the function url by navigating to the function in the portal and
     clicking the "</> Get function URL" link. This url is needed in the Flic
@@ -190,7 +301,7 @@ If you see in the code we reference the `LogicAppEndpoint`, now we just need to 
     -   **joinme**: "You should join me at the Microsoft booth at
         #Serverlessconf NYC"
 
-    -   **azureserverless**: "Azure Serverless is awesome!"
+    -   **azurefunctions**: "Azure Functions is awesome!"
 
 The url should look similar to this:
 
@@ -203,11 +314,12 @@ https://myFunctionAppName.azurewebsites.net/api/notify/azurefunctions
 2.  Repeat steps 3-4 for the button's double click and hold settings. Avoid
     reusing the same routes for each button setting.
 
-## Triggering the Function
+Triggering the Function
+=======================
 
 Based on your click command configuration, the HTTP function will send a request
 to Twitter to authenticate and post a tweet to the specified account with one of
 the three predefined messages. Because tweeting the same message twice in a row
 is prohibited on Twitter, each button click command will only tweet once. Change
-the tweet message text in the logic app or delete the posted tweets to create more
+the tweet message text in the code or delete the posted tweets to create more
 tweets through button clicks.
