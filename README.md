@@ -80,23 +80,29 @@ Next choose either [C#](#C#-sample) or [JavaScript](#javascript-sample) for a sa
 If writing a C# Function, here is the code you can use to send a request to a Logic App to post a Tweet:
 
 ```csharp
-using System.Net;
-using System.Net.Http;
+using System.Net; 
+
+private readonly static HttpClient _httpClient = new HttpClient();
+private readonly static Dictionary<string, string> _messageMap = new Dictionary<string, string>
+{
+    ["arrived"] = "Arrived at #ServerlessConf NYC. Trying out this cool #AzureFunctions demo",
+    ["joinme"] = "You should join me at the Microsoft booth at #Serverlessconf NYC",
+    ["azureserverless"] = "Azure Serverless is awesome! @AzureFunctions @logicappsio"
+};
 
 public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, string messageType, TraceWriter log)
 {
     log.Info("C# HTTP trigger function processed a request.");
-    var _messageMap = new Dictionary<string, string>
+
+    if (!_messageMap.TryGetValue(messageType, out string message))
     {
-        ["arrived"] = "Arrived at #ServerlessConf NYC. Trying out this cool #AzureFunctions demo",
-        ["joinme"] = "You should join me at the Microsoft booth at #Serverlessconf NYC",
-        ["azureserverless"] = "Azure Serverless is awesome! @AzureFunctions @logicappsio"
-    };
-     _messageMap.TryGetValue(messageType, out string message);
-    var client = new HttpClient();
-    await client.PostAsJsonAsync(Environment.GetEnvironmentVariable("LogicAppEndpoint", 
-              EnvironmentVariableTarget.Process), message);
-    return req.CreateResponse(HttpStatusCode.OK);
+        return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid message type.");
+    }
+
+    string logicAppEndpoint = Environment.GetEnvironmentVariable("LogicAppEndpoint");
+    await _httpClient.PostAsJsonAsync(logicAppEndpoint, message);
+
+    return req.CreateResponse(HttpStatusCode.OK, "Tweet sent");
 }
 ```
 
@@ -137,7 +143,7 @@ module.exports = function (context, req) {
     } else {
         context.res = {
             status: 400,
-            body: "Invalid request. Messing message type"
+            body: "Invalid request. Missing message type"
         };
     }
 
