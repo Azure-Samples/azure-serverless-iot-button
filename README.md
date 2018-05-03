@@ -1,219 +1,140 @@
-# Azure Serverless IoT Button
+# Azure IoT and Serverless Button Sample
 
-## Tweet with Azure Functions and Flic Button
+The following sample will walk you through building an IoT application to post a tweet to Twitter.
 
-This tutorial shows you how to integrate an Azure Function with your Flic button
-by posting a tweet to your Twitter account when the Flic is clicked.  We are going to use Azure Functions for Serverless Compute, and Azure Logic Apps for serverless workflows/integration with Twitter.
+If you have any questions or issues feel free to create them on this repo following the provided templates.
 
-Prerequisites:
+## Visual Studio 2017 and C# Walkthrough
 
--   Twitter account
--   Flic button
--   iPhone or Android smartphone with Flic app installed
--   Azure account
+The following walkthrough will guide you in building an application that can process IoT messages and have them take an action like sending a tweet.
 
-The solution will be:
+## Pre-requisites
 
-> A Flic button sends an HTTPS request to an Azure Function which processes the data and sends a message to tweet to an Azure Logic App.  The Logic App fires and posts the tweet.
+The sample assumes the following are already ready:
 
-It only takes a few minutes to setup and get working end-to-end.
+* [Visual Studio 2017 (any edition) with the Cloud workload included](https://www.visualstudio.com/downloads/)
+* [An Azure Subscription (free trial works great)](https://azure.microsoft.com/en-us/free/)
 
-## Working with Functions in the Azure Portal
+The following are optional:
 
-Functions can be created, developed, configured, and tested the Azure portal.
+* An IoT button that can send an event to IoT Hub (the teXXmo Azure Certified button works great)
 
-![images/1.png](images/1.png)
+## Creating an IoT Hub
 
-## Create a Function App
+The first step we need to do is create the IoT Hub.  Azure IoT Hub allows you to manage, configure, and monitor IoT devices. 
 
-Functions require a function app to host function execution. This can be done in
-the Azure portal.
+1. Open the [Azure Portal](https://portal.azure.com) and sign-in with an account
+1. Click the **Create** button in the top left, select **Internet of Things** and then **IoT Hub**
+1. Provide a *globally* unique name for your hub, and select the pricing tier (Basic tier if fine)
+1. Click the **IoT Devices** section of the settings pane  
+    ![IoT Device](images/shared_selectdevice.png)  
+1. Click **Add** and create a device ID for this device.  Click **Save**
+1. Select and open the newly created device. You will need this info to connect the device to the cloud.
 
-1.  Log in to the Azure portal and click the New button in the upper left-hand
-    corner.
+## Connecting a Device to the IoT Hub
 
-2.  Click Compute > Function App. Then, configure your app settings:
+### With a device simulator
 
-    -   App Name: Create a globally unique name.
+If you do not have a teXXmo button, you are welcome to use the community managed simulator which will send a "device to cloud" to your IoT hub.  To use visit [this link](https://prodiotsimulator.blob.core.windows.net/site/index.html) and simulate a button press by pressing the "Submit" button after adding the device connection string from the previous section.
 
-    -   Subscription: Add a new or existing subscription.
+> NOTE: This site is community managed. Only use for simple tests with non-production IoT Hubs
 
-    -   Resource Group: Add a new or existing resource group.
+### With a teXXmo button
 
-    -   Hosting plan: the Consumption Plan is recommended.
+If using the teXXmo button to connect with Azure IoT Hub, follow the instructions to connect to the button access point (hold down button for a few seconds until blinking yellow, then connect to broadcast access point).  Go to the device configuration page in a web browser (http://192.168.4.1) and configure the IoT Hub with your Device Id, Key, and Hub hostname.  The IoT Hub Hostname can be found on the **Overview** section of the blad.
 
-    -   Location: Choose a location near you.
+### With the IoT Hub SDK
 
-    -   Storage account: Create a globally unique name for the storage account
-        that will be used by your function app, or use an existing account.
+If you do not have a button and don't want to use the community button simulator, I recommend using the SDK directly in your own Visual Studio project. Instructions can be [found here](https://docs.microsoft.com/en-us/azure/iot-hub/iot-hub-csharp-csharp-getstarted#introduction)
 
-3.  Click Create.
+## Creating the Azure Function
 
-## Create an HTTP Triggered Function
+Now that you have an IoT Hub and a connected device, we need to write a simple Azure Function to process the data the devices are generating.
 
-Now that the function app has been created, a function can be added to it. The
-template for an HTTP triggered function will execute when sent an HTTP request.
+1. Open Visual Studio 2017
+    * Make sure all updates have been installed for 2017 and the Azure Functions and WebJobs tools.  This sample relies on the latest templates
+1. **File** -> **New Project** and under **Visual C#** -> **Cloud** select **Azure Functions**
+1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an empty project.  Leave the defaults as-is.
+1. Right-click the project created in the **Solution Explorer** on the right-hand side and select **Add** -> **New Item**
+1. Select **Azure Function** from the list of Visual C# Items and select **Add**
+1. Choose the **IoT Hub trigger** template
+1. The IoT Hub **Connection String setting** is the name of the environment variable that contains the connection string. We will set this up later, but for now enter `IoTHubConnectionString` as the name of the environment variable.
+1. Leave **Path** as `messages/events` and click **OK**  
+    ![New Project](images/new_project.png)  
 
-1.  At the top of the portal, locate and click the magnifying glass button to
-    search for your new function app. Enter the function app's name in the
-    search bar to find and select it.
+### Getting the IoT Hub connection string
 
-2.  Expand your new function app, then click the + button next to functions.
+IoT Hub communicates with Azure Functions triggers via the events endpoint.  First we need to get the events endpoint connection string.
 
-3.  Select the HttpTrigger function template for either C# or JavaScript.
+1. Open up your previously created IoT Hub in the [Azure Portal](https://portal.azure.com)
+1. On the left-hand navigation select **Endpoints**
+1. Click the **Events** endpoint
+1. Copy the **Event Hub-compatible endpoint** and also the **Event Hub-compatible name**
+1. To generate a valid Connection String you need to append the **name** to the **endpoint** with the following template: {endpoint};EntityPath={name}
+    * For example: if my **compatible endpoint** was `Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=` and my **compatible name** was `myiothub` my **Connection STring** would be `Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=;EntityPath=myiothub`
 
-4.  Change the Authorization level to Anonymous
+### Setting the IoT Hub Connection String in the Function
 
-5.  Click Create.
+If you recall from the project creation of the Azure Function, you set an environment variable called `IoTHubConnectionString` as the connection string setting.  In order to set this environment variable in your local development, the easiest method is to set it as a value in the `local.settings.json` file.  This can store and create environment variables for local development.
 
-## Configure Function
-
-1.	In the portal, expand the function and click Integrate in the expanded view.
-2.	Add the following route to the Route template field: notify/{messageType:alpha}
-
-This will give the function URL a path parameter `messageType` we can access within the function.
-
-Next choose either [C#](#C#-sample) or [JavaScript](#javascript-sample) for a sample function.
-
-## C# Sample
-
-If writing a C# Function, here is the code you can use to send a request to a Logic App to post a Tweet:
-
-```csharp
-using System.Net; 
-
-private readonly static HttpClient _httpClient = new HttpClient();
-private readonly static Dictionary<string, string> _messageMap = new Dictionary<string, string>
-{
-    ["arrived"] = "Arrived at #ServerlessConf NYC. Trying out this cool #AzureFunctions demo",
-    ["joinme"] = "You should join me at the Microsoft booth at #Serverlessconf NYC",
-    ["azureserverless"] = "Azure Serverless is awesome! @AzureFunctions @logicappsio"
-};
-
-public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, string messageType, TraceWriter log)
-{
-    log.Info("C# HTTP trigger function processed a request.");
-
-    if (!_messageMap.TryGetValue(messageType, out string message))
+1. Open the Azure Function project in Visual Studio 2017
+1. Open the **local.settings.json** file
+1. Add an additional `Values` for the `IoTHubConnectionString`. For example (NOTE: don't use this connection string, use yours)
+    ```json
     {
-        return req.CreateResponse(HttpStatusCode.BadRequest, "Invalid message type.");
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "AzureWebJobsDashboard": "UseDevelopmentStorage=true",
+        "IoTHubConnectionString": "Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=;EntityPath=myiothub"
+     }
     }
+    ```
+1. Save the local.settings.json file
 
-    string logicAppEndpoint = Environment.GetEnvironmentVariable("LogicAppEndpoint");
-    await _httpClient.PostAsJsonAsync(logicAppEndpoint, message);
+Now let's test to make sure everything is wired up correctly.
 
-    return req.CreateResponse(HttpStatusCode.OK, "Tweet sent");
-}
-```
+1. Click the Run button in Visual Studio (Or in the menu under **Debug** -> **Start Debugging**)
+1. The Azure Functions runtime should start running on your local machine.  If you have previous unprocessed events you should see those running and showing the device message.  You can continue to simulate or send more messages using the tools outlined in the Connecting a Device section above.
+1. After doing some tests, go ahead and close the Azure Functions runtime and stop the debug session.
 
-## JavaScript Sample
+Finally, we will add some simple logic to call an Azure Logic App and post a tweet.
 
-If writing a JavaScript function, here is the code you can use to send a request to a Logic App to post a tweet:
+## Creating the Azure Logic App
 
-```javascript
-const https = require('https');
-const url = require('url');
-const myURL = url.parse(process.env["LogicAppEndpoint"]);
+1. Open the [Azure Portal](https://portal.azure.com)
+1. Select the **+** or **Create a resource** button and under **Enterprise Integration** choose **Logic App**
+1. Give it a Name, Resource Group, and Region (any will do) and click **Create**
+1. After the logic app is created, open it
+1. The designer should automatically load - if not click the **Edit** button
+1. Select the **When an HTTP request is received** trigger
+1. Click **New Step** to add a step to the workflow and **Add an action**
+1. Search for or select the **Twitter** connector
+    > NOTE: You are more than welcome to use any action you want to perform on an IoT event
+1. Select the **Post a tweet** action and authenticate this logic app against a valid Twitter account.
+1. Provide some text to be posted. For example: `I just built something awesome with Azure IoT! Try it yourself here: http://aka.ms/azureiotdemo`
+1. Click the **Save** button to save this serverless workflow
+1. Click the **When a HTTP request is received** card to open and reveal the URL generated after saving.  Copy that URL.
 
-module.exports = function (context, req) {
-    context.log('JavaScript HTTP trigger function processed a request.');
+## Calling the Logic App from the Function
 
-    let messageType = context.bindingData.messageType;
-    let messageMap = {
-        arrived: "Arrived at #ServerlessConf NYC. Trying out this cool #AzureFunctions demo",
-        joinme: "You should join me at the Microsoft booth at #Serverlessconf NYC",
-        azurefunctions: "Azure Serverless is awesome! @AzureFunctions @logicappsio"
-    };
+Now that we have the workflow created, we simply need to call it from our Azure Function.
 
-    let statusMessage = messageMap[messageType];
-    if(statusMessage) {
-        const options = {
-            hostname: myURL.hostname,
-            port: 443,
-            path: myURL.path,
-            method: 'POST'
-        };
-        const req = https.request(options, (res) => { context.log(`STATUS: ${res.statusCode}`)});
-        req.write(statusMessage);
-        req.end();
-        context.res = {
-            status: 200,
-            body: "Tweet sent"
-        };
-    } else {
-        context.res = {
-            status: 400,
-            body: "Invalid request. Missing message type"
-        };
-    }
+1. Open the Azure Function in Visual Studio
+1. Open the `.cs` file (default named `Function1.cs`) to edit the code for your function.
+1. Add the following lines after the `log.Info($"..")` line:
+    ```csharp
+      await client.PostAsync("https://prod-07..yourLogicAppURL..", null);
+    ```
+    > NOTE: replace the URL with the unique URL of your workflow
+1. Select the prompt to make the method `async` which should change the method signature to:
+    ```csharp
+    public static async System.Threading.Tasks.Task RunAsync([IoTHubTrigger("messages/events", Connection = "IoTHubConnectionString")]EventData message, TraceWriter log)
+    ```
+1. Click save and test out the function.  You should notice that whenever an IoT message is sent the Logic App is called
 
-    context.done();
-};
-```
+Feel free to continue to add logic to the function or logic app as desired.
 
-## Creating a tweeting Logic App
+When everything is working as expected, right-click the Azure Function project and select **Publish**. You can then set this project to run in your Azure Subscription.  Since this entire solution is serverless, you won't pay for the function or logic app unless they are actually executed.
 
-1. Click the **+ New** button in the Azure Portal
-1. Click Web + Mobile > Logic App, and configure one in your subscription
-1. After it is deployed, use the search in the top of the portal to open the logic app
-1. Select to **Edit** (should open by default) and choose **Start from Blank**
-1. Our function will invoke this workflow via HTTP, so add a "Request" trigger for **When an HTTP Request is received**.
-1. After the trigger, click **New Step** and add an action with **Twitter** to **Post a Tweet**.  Login with your twitter account.
-1. For the Tweet Text, select the request body from the trigger.
-1. Click save, and copy the URL from the request trigger.
-
-![Logic App](images/logicapp.png)
-
-## Configure the Function Environment Variables
-
-If you see in the code we reference the `LogicAppEndpoint`, now we just need to set that environmental variable.
-
-1.	In the portal, navigate to the function app that hosts the recently created function.
-2.	In the function app overview tab, click on Application settings.
-3.	Scroll down to the Application settings section, click on the "+ Add new setting" button and add the key:
-    - LogicAppEndpoint: *The Request URL from the Logic App* - something like `https://prod-23.westus.logic.azure.com:443/workflows/***`
-1. Click **Save**
-
-## Configure Flic
-
-1.  Copy the function url by navigating to the function in the portal and
-    clicking the "</> Get function URL" link. This url is needed in the Flic
-    app and can be quite long. It is recommended to paste the url in a cloud
-    based document for mobile access.
-
-2.  In the Flic App, connect a button if you haven't already done so and enter
-    the button settings by tapping it.
-
-3.  For the click setting, press + to the right of the click command and add a
-    Internet Request function to the button by searching in the function menu.
-
-4.  Edit the function by adding the function url and adding one of the three
-    routes that is mapped to a tweet message:
-
-    -   **arrived**: "Arrived at #ServerlessConf NYC. Trying out
-        #AzureFunctions"
-
-    -   **joinme**: "You should join me at the Microsoft booth at
-        #Serverlessconf NYC"
-
-    -   **azurefunctions**: "Azure Serverless is awesome!"
-
-The url should look similar to this:
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-https://myFunctionAppName.azurewebsites.net/api/notify/azurefunctions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-1.  Press done to save the settings.
-
-2.  Repeat steps 3-4 for the button's double click and hold settings. Avoid
-    reusing the same routes for each button setting.
-
-## Triggering the Function
-
-Based on your click command configuration, the HTTP function will send a request
-to Twitter to authenticate and post a tweet to the specified account with one of
-the three predefined messages. Because tweeting the same message twice in a row
-is prohibited on Twitter, each button click command will only tweet once. Change
-the tweet message text in the logic app or delete the posted tweets to create more
-tweets through button clicks.
+**Be sure to edit the application settings of the function after publishing** to make sure the environment in Azure is correct. This includes saying **Yes** to the prompt to upgrade the runtime version, and adding an **IoTConnectionString** Application Setting and pasting in the connection string you have in the `local.settings.json` file.  There is a link to update the application settings after publishing in Visual Studio, or it can be edited in the Azure Portal by opening the function and selecting **Application Settings**.
