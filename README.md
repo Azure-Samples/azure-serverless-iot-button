@@ -24,8 +24,11 @@ The following are optional:
 The first step we need to do is create the IoT Hub.  Azure IoT Hub allows you to manage, configure, and monitor IoT devices. 
 
 1. Open the [Azure Portal](https://portal.azure.com) and sign-in with an account
-1. Click the **Create** button in the top left, select **Internet of Things** and then **IoT Hub**
+1. Click the **+** or **Create a resource** button in the top left, select **Internet of Things** and then **IoT Hub**
 1. Provide a *globally* unique name for your hub, and select the pricing tier (Basic tier if fine)
+1. Create/Select a resource group
+1. Select the option to pin to dashboard
+1. Click the create button
 1. Click the **IoT Devices** section of the settings pane  
     ![IoT Device](images/shared_selectdevice.png)  
 1. Click **Add** and create a device ID for this device.  Click **Save**
@@ -35,7 +38,7 @@ The first step we need to do is create the IoT Hub.  Azure IoT Hub allows you to
 
 ### With a device simulator
 
-If you do not have a teXXmo button, you are welcome to use the community managed simulator which will send a "device to cloud" to your IoT hub.  To use visit [this link](https://prodiotsimulator.blob.core.windows.net/site/index.html) and simulate a button press by pressing the "Submit" button after adding the device connection string from the previous section.
+If you do not have a teXXmo button, you are welcome to use the community managed simulator which will send a "device to cloud" to your IoT hub.  To use visit [this link](https://prodiotsimulator.blob.core.windows.net/site/index.html) and simulate a button press by pressing the "Submit" button after adding the device connection string from the previous section (Device details page).
 
 > NOTE: This site is community managed. Only use for simple tests with non-production IoT Hubs
 
@@ -54,7 +57,7 @@ Now that you have an IoT Hub and a connected device, we need to write a simple A
 1. Open Visual Studio 2017
     * Make sure all updates have been installed for 2017 and the Azure Functions and WebJobs tools.  This sample relies on the latest templates
 1. **File** -> **New Project** and under **Visual C#** -> **Cloud** select **Azure Functions**
-1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an empty project.  Leave the defaults as-is.
+1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an **empty project**.  Leave the defaults as-is.
 1. Right-click the project created in the **Solution Explorer** on the right-hand side and select **Add** -> **New Item**
 1. Select **Azure Function** from the list of Visual C# Items and select **Add**
 1. Choose the **IoT Hub trigger** template
