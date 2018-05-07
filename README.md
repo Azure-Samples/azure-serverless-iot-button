@@ -10,7 +10,7 @@ The following walkthrough will guide you in building an application that can pro
 
 ## Pre-requisites
 
-The sample assumes the following are already ready:
+The sample assumes the following are already installed and prepared:
 
 * [Visual Studio 2017 (any edition) with the Cloud workload included](https://www.visualstudio.com/downloads/)
 * [An Azure Subscription (free trial works great)](https://azure.microsoft.com/en-us/free/)
@@ -25,7 +25,7 @@ The first step we need to do is create the IoT Hub.  Azure IoT Hub allows you to
 
 1. Open the [Azure Portal](https://portal.azure.com) and sign-in with an account
 1. Click the **+** or **Create a resource** button in the top left, select **Internet of Things** and then **IoT Hub**
-1. Provide a *globally* unique name for your hub, and select the pricing tier (Basic tier if fine)
+1. Provide a *globally* unique name for your hub, and optionally select the pricing tier (Basic tier if fine)
 1. Create/Select a resource group
 1. Select the option to pin to dashboard
 1. Click the create button
@@ -44,7 +44,7 @@ If you do not have a teXXmo button, you are welcome to use the community managed
 
 ### With a teXXmo button
 
-If using the teXXmo button to connect with Azure IoT Hub, follow the instructions to connect to the button access point (hold down button for a few seconds until blinking yellow, then connect to broadcast access point).  Go to the device configuration page in a web browser (http://192.168.4.1) and configure the IoT Hub with your Device Id, Key, and Hub hostname.  The IoT Hub Hostname can be found on the **Overview** section of the blad.
+If using the teXXmo button to connect with Azure IoT Hub, follow the instructions to connect to the button access point (hold down button for a few seconds until blinking yellow, then connect to the broadcast access point).  Go to the device configuration page in a web browser (http://192.168.4.1) and configure the IoT Hub with your Device Id, Key, and Hub hostname.  The IoT Hub Hostname can be found on the **Overview** section of IoT Hub.
 
 ### With the IoT Hub SDK
 
@@ -74,7 +74,7 @@ IoT Hub communicates with Azure Functions triggers via the events endpoint.  Fir
 1. Click the **Events** endpoint
 1. Copy the **Event Hub-compatible endpoint** and also the **Event Hub-compatible name**
 1. To generate a valid Connection String you need to append the **name** to the **endpoint** with the following template: {endpoint};EntityPath={name}
-    * For example: if my **compatible endpoint** was `Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=` and my **compatible name** was `myiothub` my **Connection STring** would be `Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=;EntityPath=myiothub`
+    * For example: if my **compatible endpoint** was `Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=` and my **compatible name** was `myiothub` my **Connection String** would be `Endpoint=sb://myendpoint.net/;SharedAccessKeyName=123=;EntityPath=myiothub`
 
 ### Setting the IoT Hub Connection String in the Function
 
@@ -130,7 +130,7 @@ Now that we have the workflow created, we simply need to call it from our Azure 
       await client.PostAsync("https://prod-07..yourLogicAppURL..", null);
     ```
     > NOTE: replace the URL with the unique URL of your workflow
-1. Select the prompt to make the method `async` which should change the method signature to:
+1. Select the light-bulb prompt to make the method `async` which should change the method signature to:
     ```csharp
     public static async System.Threading.Tasks.Task RunAsync([IoTHubTrigger("messages/events", Connection = "IoTHubConnectionString")]EventData message, TraceWriter log)
     ```
@@ -138,6 +138,17 @@ Now that we have the workflow created, we simply need to call it from our Azure 
 
 Feel free to continue to add logic to the function or logic app as desired.
 
-When everything is working as expected, right-click the Azure Function project and select **Publish**. You can then set this project to run in your Azure Subscription.  Since this entire solution is serverless, you won't pay for the function or logic app unless they are actually executed.
+Run the function again and test out with the button. It should call the logic app and post a tweet!
 
-**Be sure to edit the application settings of the function after publishing** to make sure the environment in Azure is correct. This includes saying **Yes** to the prompt to upgrade the runtime version, and adding an **IoTConnectionString** Application Setting and pasting in the connection string you have in the `local.settings.json` file.  There is a link to update the application settings after publishing in Visual Studio, or it can be edited in the Azure Portal by opening the function and selecting **Application Settings**.
+## Publishing the Function
+
+When everything is working as expected, right-click the Azure Function project and select **Publish**. You can then set this project to run in your Azure Subscription.  Since this entire solution is serverless, you won't pay for the function or logic app unless they are actually executed. 
+
+**Be sure to edit the application settings of the function after publishing** to make sure the environment in Azure is correct. This includes saying **Yes** to the prompt to upgrade the runtime version to `beta` (the v2 setting we specified for our Function on create), and adding an **IoTConnectionString** Application Setting and pasting in the connection string you have in the `local.settings.json` file. 
+
+1. On the Publish Profile screen after publishing, select the **Manage Application Settings**  
+    ![](images/manage.png)  
+1. Click **Add** and add a cloud environment variable for `IoTConnectString` and paste in the value from your `local.settings.json` connection string.
+1. Click **OK** to save the changes - the function show now be listening to the IoT Hub you used locally in the cloud.
+
+This is just a simple IoT backend leveraging IoT Hub and Azure serverless.  You could continue to build more features to this solution as needed.
