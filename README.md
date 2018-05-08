@@ -55,9 +55,9 @@ If you do not have a button and don't want to use the community button simulator
 Now that you have an IoT Hub and a connected device, we need to write a simple Azure Function to process the data the devices are generating.
 
 1. Open Visual Studio 2017
-    * Make sure all updates have been installed for 2017 and the Azure Functions and WebJobs tools.  This sample relies on the latest templates
-1. **File** -> **New Project** and under **Visual C#** -> **Cloud** select **Azure Functions**
-1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an **empty project**.  Leave the defaults as-is.
+1. **Help** -> **Check for updates**. Make sure all updates have been installed for 2017 and the Azure Functions and WebJobs tools.  This sample relies on the latest templates.
+1. **File** -> **New Project** and under **Visual C#** -> **Cloud** select **Azure Functions**, then select **OK**.
+1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an **empty project**.  Leave the defaults as-is, then select **OK**.
 1. Right-click the project created in the **Solution Explorer** on the right-hand side and select **Add** -> **New Item**
 1. Select **Azure Function** from the list of Visual C# Items and select **Add**
 1. Choose the **IoT Hub trigger** template
