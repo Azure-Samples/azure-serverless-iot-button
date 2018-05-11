@@ -55,12 +55,12 @@ If you do not have a button and don't want to use the community button simulator
 Now that you have an IoT Hub and a connected device, we need to write a simple Azure Function to process the data the devices are generating.
 
 1. Open Visual Studio 2017
-    * Make sure all updates have been installed for 2017 and the Azure Functions and WebJobs tools.  This sample relies on the latest templates
-1. **File** -> **New Project** and under **Visual C#** -> **Cloud** select **Azure Functions**
-1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an **empty project**.  Leave the defaults as-is.
+1. **Tool** -> **Extensions and Updates** to [check your Azure Functions and Web Jobs Tools version](https://docs.microsoft.com/azure/azure-functions/functions-develop-vs#check-your-tools-version). Make sure you have at least **version 15.0.40502.0**. If not, [update your tools](https://docs.microsoft.com/azure/azure-functions/functions-develop-vs#update-your-tools).
+1. **File** -> **New Project** and under **Visual C#** -> **Cloud** select **Azure Functions**, then select **OK**.
+1. Select the **Azure Functions v2 Preview** runtime in the dropdown and start with an **empty project**.  Leave the defaults as-is, then select **OK**.
 1. Right-click the project created in the **Solution Explorer** on the right-hand side and select **Add** -> **New Item**
 1. Select **Azure Function** from the list of Visual C# Items and select **Add**
-1. Choose the **IoT Hub trigger** template
+1. Choose the **IoT Hub trigger** template. If you don't see this template, [update your tools](https://docs.microsoft.com/azure/azure-functions/functions-develop-vs#update-your-tools).
 1. The IoT Hub **Connection String setting** is the name of the environment variable that contains the connection string. We will set this up later, but for now enter `IoTHubConnectionString` as the name of the environment variable.
 1. Leave **Path** as `messages/events` and click **OK**  
     ![New Project](images/new_project.png)  
