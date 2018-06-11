@@ -148,7 +148,7 @@ When everything is working as expected, right-click the Azure Function project a
 
 1. On the Publish Profile screen after publishing, select the **Manage Application Settings**  
     ![](images/manage.png)  
-1. Click **Add** and add a cloud environment variable for `IoTConnectString` and paste in the value from your `local.settings.json` connection string.
+1. Click **Add** and add a cloud environment variable for `IoTHubConnectionString` and paste in the value from your `local.settings.json` connection string.
 1. Click **OK** to save the changes - the function show now be listening to the IoT Hub you used locally in the cloud.
 
 This is just a simple IoT backend leveraging IoT Hub and Azure serverless.  You could continue to build more features to this solution as needed.
